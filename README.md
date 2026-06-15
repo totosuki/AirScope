@@ -86,7 +86,13 @@ python edge/send_demo_adsb.py --dry-run --count 2 --interval 0
 python edge/send_demo_adsb.py --endpoint http://192.168.1.10:8080/telemetry --count 5
 ```
 
-Azure IoT Hub 送信は次の段階で追加します。実装時は、IoT Hub 接続文字列、デバイス ID、任意 HTTP エンドポイントなどを環境変数または `.env` で渡します。実値はコミットしません。
+Azure IoT Hub 送信は `--transport azure-iot-hub` で実行します。IoT Hub 接続文字列、デバイス ID、任意 HTTP エンドポイントなどは環境変数またはローカルの `.env` で渡します。実値はコミットしません。
+
+```sh
+python -m pip install -e edge
+export AIRSCOPE_IOTHUB_DEVICE_CONNECTION_STRING='HostName=...;DeviceId=...;SharedAccessKey=...'
+python edge/send_demo_adsb.py --transport azure-iot-hub --count 5
+```
 
 ## ドキュメント運用
 
