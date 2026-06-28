@@ -34,15 +34,19 @@ AirScope の Azure パイプラインと fr24feed は独立させます。fr24fe
 AirScope/
 ├── AGENTS.md
 ├── README.md
+├── docs/
+│   └── 設計/
+│       └── データベース設計.md
 ├── documents/
 │   └── yyMMdd/
-│       └── 001-example.md
+│       └── 001-書類名の例.md
 ├── edge/
+├── functions/
 ├── fr24/
 └── web/
 ```
 
-`edge` は Raspberry Pi での受信から Azure IoT Hub 送信まで、`fr24` は Flightradar24 contribute 関連、`web` は Azure Static Web Apps 上の可視化アプリを管理します。Azure IaC、共通パッケージ、リポジトリ横断スクリプトは、必要になった段階で追加します。
+`edge` は Raspberry Pi での受信から Azure IoT Hub 送信まで、`functions` は IoT Hub から Cosmos DB への取り込み、`fr24` は Flightradar24 contribute 関連、`web` は Azure Static Web Apps 上の可視化アプリを管理します。`docs` は Git 管理する正式書類、`documents` は Git 管理しないローカル作業記録です。Azure IaC、共通パッケージ、リポジトリ横断スクリプトは、必要になった段階で追加します。
 
 ## Phase 0: リポジトリ基盤
 
@@ -98,11 +102,13 @@ python edge/send_demo_adsb.py --transport azure-iot-hub --count 5
 
 `documents` ディレクトリはローカル書類置き場として扱い、Git には載せません。AI に書類作成を依頼する場合のみ、`documents/yyMMdd/<連番>-<内容>.md` に記録します。書類作成・更新時は、毎回現在日付を確認します。
 
+実装と一緒に継続保守する正式な設計書、仕様書、運用手順書は `docs` に配置して Git 管理します。
+
 例:
 
 ```text
-documents/260608/001-initial-plan.md
-documents/260608/003-readme-phase0.md
+documents/260608/001-AirScope初期計画.md
+documents/260608/002-ディレクトリ構成方針.md
 ```
 
 ## 開発メモ
