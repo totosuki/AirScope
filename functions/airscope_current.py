@@ -7,8 +7,10 @@ from typing import Any
 from uuid import uuid4
 
 
-DEFAULT_CURRENT_THRESHOLD_SECONDS = 30
-DEFAULT_STALE_THRESHOLD_SECONDS = 120
+# Temporary development defaults: keep snapshots displayable for one day while
+# the web data path is being built and tested. App Settings can override these.
+DEFAULT_CURRENT_THRESHOLD_SECONDS = 86_400
+DEFAULT_STALE_THRESHOLD_SECONDS = 86_400
 
 
 def utc_now_iso() -> str:

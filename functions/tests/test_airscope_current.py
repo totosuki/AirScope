@@ -68,6 +68,8 @@ class CurrentAircraftTests(unittest.TestCase):
             airscope_current.aircraft_status(
                 freshness,
                 datetime(2026, 6, 15, 0, 0, 31, tzinfo=UTC),
+                current_threshold_seconds=30,
+                stale_threshold_seconds=120,
             ),
             "stale",
         )
@@ -75,6 +77,26 @@ class CurrentAircraftTests(unittest.TestCase):
             airscope_current.aircraft_status(
                 freshness,
                 datetime(2026, 6, 15, 0, 2, 1, tzinfo=UTC),
+                current_threshold_seconds=30,
+                stale_threshold_seconds=120,
+            ),
+            "expired",
+        )
+
+    def test_default_status_keeps_aircraft_current_for_one_day(self) -> None:
+        freshness = "2026-06-15T00:00:00.000Z"
+
+        self.assertEqual(
+            airscope_current.aircraft_status(
+                freshness,
+                datetime(2026, 6, 16, 0, 0, tzinfo=UTC),
+            ),
+            "current",
+        )
+        self.assertEqual(
+            airscope_current.aircraft_status(
+                freshness,
+                datetime(2026, 6, 16, 0, 0, 1, tzinfo=UTC),
             ),
             "expired",
         )
