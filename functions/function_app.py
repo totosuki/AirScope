@@ -1,4 +1,4 @@
-"""Azure Functions entry point for AirScope telemetry ingestion."""
+"""Azure Functions entry points for AirScope ingestion and read APIs."""
 
 from __future__ import annotations
 
@@ -12,21 +12,39 @@ from typing import Any
 import azure.functions as func
 from azure.cosmos import CosmosClient, exceptions
 
-from airscope_current import build_current_item, build_raw_item, should_update_current, utc_now_iso
+from airscope_current import (
+    DEFAULT_CURRENT_THRESHOLD_SECONDS,
+    DEFAULT_STALE_THRESHOLD_SECONDS,
+    build_current_item,
+    build_raw_item,
+    should_update_current,
+    utc_now_iso,
+)
+from airscope_http import (
+    ApiResult,
+    current_aircraft_result,
+    internal_error_result,
+    read_env_int,
+    recent_telemetry_result,
+)
 
 
 app = func.FunctionApp()
 
 
-def _env_int(name: str, default: int) -> int:
-    value = os.environ.get(name)
-    if value is None:
-        return default
-    try:
-        return int(value)
-    except ValueError:
-        logging.warning("Invalid integer app setting %s=%r. Using %s.", name, value, default)
-        return default
+def _json_response(result: ApiResult) -> func.HttpResponse:
+    return func.HttpResponse(
+        body=json.dumps(result.payload, ensure_ascii=False),
+        status_code=result.status_code,
+        headers=result.headers,
+        mimetype="application/json",
+        charset="utf-8",
+    )
+
+
+def _http_error_response(function_name: str) -> func.HttpResponse:
+    logging.exception("Unhandled error in %s", function_name)
+    return _json_response(internal_error_result())
 
 
 @lru_cache(maxsize=1)
@@ -64,8 +82,12 @@ def process_airscope_telemetry(event: func.EventHubEvent) -> None:
         payload,
         updated_at=ingested_at,
         now=datetime.now(UTC),
-        current_threshold_seconds=_env_int("AIRSCOPE_CURRENT_THRESHOLD_SECONDS", 30),
-        stale_threshold_seconds=_env_int("AIRSCOPE_STALE_THRESHOLD_SECONDS", 120),
+        current_threshold_seconds=read_env_int(
+            os.environ, "AIRSCOPE_CURRENT_THRESHOLD_SECONDS", DEFAULT_CURRENT_THRESHOLD_SECONDS
+        ),
+        stale_threshold_seconds=read_env_int(
+            os.environ, "AIRSCOPE_STALE_THRESHOLD_SECONDS", DEFAULT_STALE_THRESHOLD_SECONDS
+        ),
     )
     if current_item is None:
         logging.info("Skip current_aircraft update: payload is missing aircraft identity or position")
@@ -84,3 +106,46 @@ def process_airscope_telemetry(event: func.EventHubEvent) -> None:
         return
 
     current_container.upsert_item(current_item)
+
+
+@app.function_name(name="GetCurrentAircraft")
+@app.route(
+    route="aircraft/current",
+    methods=["GET"],
+    auth_level=func.AuthLevel.FUNCTION,
+)
+def get_current_aircraft(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        _, current_container = _containers()
+        result = current_aircraft_result(
+            req.params,
+            current_container,
+            current_threshold_seconds=read_env_int(
+                os.environ,
+                "AIRSCOPE_CURRENT_THRESHOLD_SECONDS",
+                DEFAULT_CURRENT_THRESHOLD_SECONDS,
+            ),
+            stale_threshold_seconds=read_env_int(
+                os.environ,
+                "AIRSCOPE_STALE_THRESHOLD_SECONDS",
+                DEFAULT_STALE_THRESHOLD_SECONDS,
+            ),
+        )
+        return _json_response(result)
+    except Exception:  # The client receives a generic response; details stay in logs.
+        return _http_error_response("GetCurrentAircraft")
+
+
+@app.function_name(name="GetRecentTelemetry")
+@app.route(
+    route="telemetry/recent",
+    methods=["GET"],
+    auth_level=func.AuthLevel.FUNCTION,
+)
+def get_recent_telemetry(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        telemetry_container, _ = _containers()
+        result = recent_telemetry_result(req.params, telemetry_container)
+        return _json_response(result)
+    except Exception:  # The client receives a generic response; details stay in logs.
+        return _http_error_response("GetRecentTelemetry")
