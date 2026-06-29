@@ -2,7 +2,26 @@
 
 `web`は、AirScopeがAzure Cosmos DBへ保存したADS-B航空機情報を、Azure Static Web Apps上で可視化するNext.jsアプリケーションである。
 
-現時点では実装前の計画段階であり、このディレクトリには本READMEだけを配置する。次の作業からNext.jsプロジェクト、shadcn/ui、API client、画面componentを順番に追加する。
+本READMEの計画に基づき、Next.js、shadcn/ui、Leaflet、Chart.jsを使用した初期ダッシュボードを実装している。
+
+## 実装状況
+
+- Web Step 3-1: 完了。Next.js App Router、TypeScript、shadcn/ui、Vitest、静的exportを構成済み。
+- Web Step 3-2: 完了。2つのHTTP API、応答検証、3秒polling、loading・empty・error表示を実装済み。
+- Web Step 3-3: 完了。高度帯別marker、機体選択、詳細表示を備えたLeaflet地図を実装済み。
+- Web Step 3-4: 完了。最新telemetry一覧と高度帯別Chart.jsグラフを実装済み。
+- Web Step 3-5: 未着手。Azure Static Web Appsの作成と認証方式の確定が必要。
+
+ローカル起動時はAzure Functionsを`localhost:7071`で起動し、別terminalで次を実行する。
+
+```sh
+cd web
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+ブラウザで`http://localhost:3000`を開く。本番ではAPI base URLを未指定にするとsame-originの`/api`を使用する。Function keyを公開環境変数へ設定してはならない。
 
 ## 1. 目的
 
