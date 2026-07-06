@@ -13,34 +13,32 @@ import os
 import sys
 import time
 import urllib.error
-import urllib.parse
-import urllib.request
-from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from airscope_telemetry import (
+    AircraftTelemetry,
+    AzureIoTHubSender,
+    HttpSender,
+    TelemetrySender,
+    build_envelope,
+    encode_payload,
+    normalize_endpoint,
+    post_json,
+    utc_now_iso,
+)
+
 
 SCHEMA_VERSION = "airscope.telemetry.demo.v1"
+SOURCE = "airscope-demo"
 DEFAULT_ENDPOINT_ENV = "AIRSCOPE_HTTP_ENDPOINT"
 DEFAULT_IOTHUB_CONNECTION_STRING_ENV = "AIRSCOPE_IOTHUB_DEVICE_CONNECTION_STRING"
 DEFAULT_TRANSPORT = "http"
 
-
-@dataclass(frozen=True)
-class AircraftTelemetry:
-    icao24: str
-    callsign: str
-    lat: float
-    lon: float
-    altitude_ft: int
-    ground_speed_kt: int
-    track_deg: int
-    vertical_rate_fpm: int
-    squawk: str
-    seen_at: str
-    received_at: str
-    receiver_id: str
-    distance_km: float
+# Backwards-compatible aliases: the demo transport is now the shared transport.
+DemoSender = TelemetrySender
+HttpDemoSender = HttpSender
+AzureIoTHubDemoSender = AzureIoTHubSender
 
 
 DEMO_AIRCRAFT = [
@@ -83,17 +81,6 @@ DEMO_AIRCRAFT = [
 ]
 
 
-def utc_now_iso() -> str:
-    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
-
-
-def normalize_endpoint(endpoint: str) -> str:
-    parsed = urllib.parse.urlparse(endpoint)
-    if parsed.scheme:
-        return endpoint
-    return f"http://{endpoint}"
-
-
 def build_telemetry(index: int, receiver_id: str) -> AircraftTelemetry:
     base = DEMO_AIRCRAFT[index % len(DEMO_AIRCRAFT)]
     lap = index // len(DEMO_AIRCRAFT)
@@ -122,88 +109,7 @@ def build_telemetry(index: int, receiver_id: str) -> AircraftTelemetry:
 
 
 def build_payload(telemetry: AircraftTelemetry, session_id: str) -> dict[str, Any]:
-    return {
-        "schema_version": SCHEMA_VERSION,
-        "source": "airscope-demo",
-        "session_id": session_id,
-        "sent_at": utc_now_iso(),
-        "telemetry": asdict(telemetry),
-    }
-
-
-def encode_payload(payload: dict[str, Any]) -> bytes:
-    return json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-
-
-def post_json(endpoint: str, payload: dict[str, Any], timeout: float) -> int:
-    body = encode_payload(payload)
-    request = urllib.request.Request(
-        endpoint,
-        data=body,
-        method="POST",
-        headers={
-            "Content-Type": "application/json; charset=utf-8",
-            "User-Agent": "AirScope-demo-sender/0.1",
-        },
-    )
-
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        response.read()
-        return response.status
-
-
-class DemoSender:
-    def send(self, payload: dict[str, Any], telemetry: AircraftTelemetry) -> str:
-        raise NotImplementedError
-
-
-class HttpDemoSender(DemoSender):
-    def __init__(self, endpoint: str, timeout: float) -> None:
-        self.endpoint = endpoint
-        self.timeout = timeout
-
-    def send(self, payload: dict[str, Any], telemetry: AircraftTelemetry) -> str:
-        status = post_json(self.endpoint, payload, self.timeout)
-        return f"{telemetry.icao24} {telemetry.callsign} -> {self.endpoint} status={status}"
-
-
-class AzureIoTHubDemoSender(DemoSender):
-    def __init__(self, connection_string: str) -> None:
-        self.connection_string = connection_string
-        self._client: Any | None = None
-        self._message_type: Any | None = None
-
-    def __enter__(self) -> "AzureIoTHubDemoSender":
-        try:
-            from azure.iot.device import IoTHubDeviceClient, Message
-        except ImportError as exc:
-            raise RuntimeError(
-                "Azure IoT Hub transport requires the 'azure-iot-device' package. "
-                "Install edge dependencies before using --transport azure-iot-hub."
-            ) from exc
-
-        self._message_type = Message
-        self._client = IoTHubDeviceClient.create_from_connection_string(self.connection_string)
-        self._client.connect()
-        return self
-
-    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
-        if self._client is not None:
-            self._client.disconnect()
-
-    def send(self, payload: dict[str, Any], telemetry: AircraftTelemetry) -> str:
-        if self._client is None or self._message_type is None:
-            raise RuntimeError("Azure IoT Hub sender is not connected")
-
-        message = self._message_type(encode_payload(payload))
-        message.content_type = "application/json"
-        message.content_encoding = "utf-8"
-        message.custom_properties["schema_version"] = str(payload["schema_version"])
-        message.custom_properties["source"] = str(payload["source"])
-        message.custom_properties["session_id"] = str(payload["session_id"])
-        message.custom_properties["receiver_id"] = telemetry.receiver_id
-        self._client.send_message(message)
-        return f"{telemetry.icao24} {telemetry.callsign} -> azure-iot-hub"
+    return build_envelope(telemetry, session_id, SCHEMA_VERSION, SOURCE)
 
 
 def parse_args() -> argparse.Namespace:

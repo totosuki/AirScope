@@ -37,7 +37,7 @@ class SenderTests(unittest.TestCase):
         telemetry = send_demo_adsb.build_telemetry(0, "receiver-test")
         payload = send_demo_adsb.build_payload(telemetry, "session-test")
 
-        with mock.patch.object(send_demo_adsb, "post_json", return_value=202) as post_json:
+        with mock.patch("airscope_telemetry.post_json", return_value=202) as post_json:
             sender = send_demo_adsb.HttpDemoSender("http://127.0.0.1:8080/telemetry", 3.0)
             result = sender.send(payload, telemetry)
 

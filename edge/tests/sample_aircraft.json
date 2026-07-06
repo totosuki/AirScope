@@ -1,0 +1,43 @@
+{
+  "now": 1783296000.0,
+  "messages": 1234567,
+  "aircraft": [
+    {
+      "hex": "86d9a1",
+      "flight": "ANA245  ",
+      "lat": 35.5523,
+      "lon": 139.7798,
+      "alt_baro": 12800,
+      "gs": 286.4,
+      "track": 72.3,
+      "baro_rate": 640,
+      "squawk": "3301",
+      "seen": 0.4,
+      "seen_pos": 0.6,
+      "rssi": -18.2
+    },
+    {
+      "hex": "84b7c2",
+      "flight": "JAL516",
+      "alt_baro": "ground",
+      "gs": 12,
+      "squawk": "2204",
+      "seen": 3.1
+    },
+    {
+      "hex": "~ab1234",
+      "lat": 35.7,
+      "lon": 139.9,
+      "alt_geom": 4500,
+      "geom_rate": -320,
+      "track": 210,
+      "seen": 1.0
+    },
+    {
+      "flight": "NOHEX01",
+      "lat": 35.4,
+      "lon": 140.1,
+      "seen": 2.0
+    }
+  ]
+}

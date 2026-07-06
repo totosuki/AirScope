@@ -11,6 +11,9 @@ dependencies = [
   "azure-iot-device>=2.13.0,<3.0.0",
 ]
 
+[tool.setuptools]
+py-modules = ["airscope_telemetry", "send_adsb", "send_demo_adsb"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
