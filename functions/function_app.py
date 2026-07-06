@@ -112,7 +112,7 @@ def process_airscope_telemetry(event: func.EventHubEvent) -> None:
 @app.route(
     route="aircraft/current",
     methods=["GET"],
-    auth_level=func.AuthLevel.FUNCTION,
+    auth_level=func.AuthLevel.ANONYMOUS,
 )
 def get_current_aircraft(req: func.HttpRequest) -> func.HttpResponse:
     try:
@@ -140,7 +140,7 @@ def get_current_aircraft(req: func.HttpRequest) -> func.HttpResponse:
 @app.route(
     route="telemetry/recent",
     methods=["GET"],
-    auth_level=func.AuthLevel.FUNCTION,
+    auth_level=func.AuthLevel.ANONYMOUS,
 )
 def get_recent_telemetry(req: func.HttpRequest) -> func.HttpResponse:
     try:
