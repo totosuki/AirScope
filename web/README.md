@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-ブラウザで`http://localhost:3000`を開く。本番ではAPI base URLを未指定にするとsame-originの`/api`を使用する。Function keyを公開環境変数へ設定してはならない。
+ブラウザで`http://localhost:3000/?session_id=demo-session`を開く。本番ではAPI base URLを未指定にするとsame-originの`/api`を使用する。Function keyを公開環境変数へ設定してはならない。URLに`session_id`を指定すると、その値を使ってAPIを取得する。
 
 ## 1. 目的
 
@@ -245,7 +245,14 @@ NEXT_PUBLIC_AIRSCOPE_API_BASE_URL=http://localhost:7071
 NEXT_PUBLIC_AIRSCOPE_SESSION_ID=demo-session
 ```
 
-秘密値を`web/.env.example`へ記載しない。`.env.local`はGit管理しない。
+`NEXT_PUBLIC_AIRSCOPE_SESSION_ID`はURLの`session_id`が未指定の場合のfallbackである。通常は次のようにURLで対象sessionを指定する。
+
+```text
+http://localhost:3000/?session_id=demo-session
+https://<static-site-host>/?session_id=live-rpi-20260713
+```
+
+クエリパラメータが環境変数より優先される。秘密値を`web/.env.example`へ記載しない。`.env.local`はGit管理しない。
 
 ## 8. 想定ディレクトリ構成
 
@@ -441,7 +448,7 @@ npm run build
 1. Static Web Apps Standard＋linked backendを使うか、別の安全なAPI公開方式を使うか。
 2. HTTP Triggerの`FUNCTION` authorizationを本番接続時にどう置き換えるか。
 3. 初期公開を匿名閲覧とするか、Static Web Apps認証を必須とするか。
-4. `session_id`を環境変数で固定するか、将来APIからsession一覧を取得するか。
+4. session_idをURLの`session_id`クエリパラメータで指定できるようにするか。実装済み。
 5. 地図の初期中心座標。自宅の正確な位置を公開しない。
 6. OpenStreetMap tile利用時のattributionと本番traffic方針。
 7. current aircraft APIの実際の機体数。30 telemetry件とユニーク機体数は一致しない場合がある。

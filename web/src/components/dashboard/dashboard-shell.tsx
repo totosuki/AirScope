@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Activity, Clock3, Gauge, ListFilter, MapPinned, Plane, Radio, RefreshCw, TriangleAlert } from "lucide-react";
 
@@ -15,17 +16,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAirScopeData } from "@/hooks/use-airscope-data";
-import { DEFAULT_SESSION_ID } from "@/lib/api/client";
 import type { Aircraft, Telemetry } from "@/lib/api/types";
 import { formatDateTime, formatNumber, formatRelativeTime } from "@/lib/format";
+import { resolveSessionId } from "@/lib/session-id";
 
 const AircraftMap = dynamic(() => import("@/components/map/aircraft-map"), {
   ssr: false,
   loading: () => <Skeleton className="h-[420px] w-full rounded-none" />,
 });
-const sessionId = process.env.NEXT_PUBLIC_AIRSCOPE_SESSION_ID ?? DEFAULT_SESSION_ID;
-
 export function DashboardShell() {
+  const searchParams = useSearchParams();
+  const sessionId = resolveSessionId(searchParams);
   const data = useAirScopeData(sessionId);
   const aircraft = data.current?.aircraft ?? [];
   const [selectedIcao, setSelectedIcao] = useState<string | null>(null);
